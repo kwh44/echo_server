@@ -10,9 +10,9 @@
 
 using namespace boost::asio;
 
-io_service service;
-std::mutex io;
-ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 8001);
+static io_service service;
+static std::mutex io;
+static ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 8001);
 
 size_t read_complete(char *buf, const boost::system::error_code &err, size_t bytes) {
     if (err) return 0;
@@ -30,14 +30,14 @@ void sync_echo(std::string msg) {
     std::string copy(buf, bytes - 1);
     msg = msg.substr(0, msg.size() - 1);
     std::lock_guard<std::mutex> lock(io);
-    std::cout << "server echoed our " << msg << ": " << (copy == msg ? "OK" : "FAIL") << std::endl;
+    std::cout << "Server echoed our " << msg << ": " << (copy == msg ? "OK" : "FAIL") << std::endl;
     sock.close();
 }
 
 int main(int argc, char *argv[]) {
-    std::vector<std::string> messages = {"John says hi", "so does James",
-                                         "Lucy just got home", "Boost.Asio is Fun!",
-                                         "John says hi", "so does James"};
+    std::vector<std::string> messages = {"astana-vite, astana-vite", "vite, vite nada viyti",
+                                         "astana-vite, astana-vite", "pete, pete nada viyti",
+                                         "astana-vite, astana-vite", "vove, vove nada viyti"};
     boost::thread_group threads;
     for (const auto &message: messages) {
         threads.create_thread(boost::bind(sync_echo, message));

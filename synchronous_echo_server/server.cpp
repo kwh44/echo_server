@@ -10,8 +10,8 @@
 
 using namespace boost::asio;
 
-io_service service;
-ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), 8001));
+static io_service service;
+static ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), 8001));
 
 size_t read_complete(char *buff, const boost::system::error_code &err, size_t bytes) {
     if (err) return 0;
@@ -23,7 +23,7 @@ void handle_connections(int id) {
     char buff[1024];
     while (true) {
         ip::tcp::socket sock(service);
-        acceptor.accept(sock);
+        acceptor.accept(sock); // waiting for connection
         int bytes = read(sock, buffer(buff), boost::bind(read_complete, buff, _1, _2));
         std::string msg(buff, bytes);
         sock.write_some(buffer(msg));
