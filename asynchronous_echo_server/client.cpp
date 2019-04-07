@@ -49,7 +49,8 @@ public:
     }
 
     void do_read() {
-        async_read(sock_, buffer(read_buffer_), boost::bind(&talk_to_svr::read_complete, shared_from_this(), _1, _2), MEM_FN2(on_read, _1, _2));
+        async_read(sock_, buffer(read_buffer_), boost::bind(&talk_to_svr::read_complete, shared_from_this(), _1, _2),
+                   MEM_FN2(on_read, _1, _2));
     }
 
     void do_write(const std::string &msg) {
@@ -81,6 +82,11 @@ private:
     std::string message_;
 };
 
+
+void worker_thread() {
+    service.run();
+};
+
 int main(int argc, char *argv[]) {
     ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 8001);
     std::vector<std::string> messages = {"astana-vite, astana-vite", "vite, vite nada viyti",
@@ -89,5 +95,7 @@ int main(int argc, char *argv[]) {
     for (const auto &message: messages) {
         talk_to_svr::start(ep, message);
     }
-    service.run();
+    boost::thread_group threads;
+    for (int i = 0; i < 4; ++i) threads.create_thread(worker_thread);
+    threads.join_all();
 }

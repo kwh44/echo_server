@@ -85,8 +85,14 @@ void handle_accept(talk_to_client::ptr client, const boost::system::error_code &
     acceptor.async_accept(new_client->sock(), boost::bind(handle_accept, new_client, _1));
 }
 
+void worker_thread() {
+    service.run();
+}
+
 int main(int argc, char *argv[]) {
     talk_to_client::ptr client = talk_to_client::new_();
     acceptor.async_accept(client->sock(), boost::bind(handle_accept, client, _1));
-    service.run();
+    boost::thread_group threads;
+    for (int i = 0; i < 4; ++i) threads.create_thread(worker_thread);
+    threads.join_all();
 }
