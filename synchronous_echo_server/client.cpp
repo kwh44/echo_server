@@ -35,9 +35,7 @@ void sync_echo(std::string msg) {
 }
 
 int main(int argc, char *argv[]) {
-    std::vector<std::string> messages = {"astana-vite, astana-vite", "vite, vite nada viyti",
-                                         "astana-vite, astana-vite", "pete, pete nada viyti",
-                                         "astana-vite, astana-vite", "vove, vove nada viyti"};
+    std::vector<std::string> messages(1000, "astana-vite");
     boost::thread_group threads;
     for (const auto &message: messages) {
         threads.create_thread(boost::bind(sync_echo, message));

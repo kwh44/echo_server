@@ -33,7 +33,7 @@ void handle_connections(int id) {
 
 int main(int argc, char *argv[]) {
     boost::thread_group threads;
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 100; ++i) {
         threads.create_thread(boost::bind(handle_connections, i));
     }
     threads.join_all();

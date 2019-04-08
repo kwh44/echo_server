@@ -90,13 +90,11 @@ void worker_thread() {
 
 int main(int argc, char *argv[]) {
     ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 8001);
-    std::vector<std::string> messages = {"astana-vite, astana-vite", "vite, vite nada viyti",
-                                         "astana-vite, astana-vite", "pete, pete nada viyti",
-                                         "astana-vite, astana-vite", "vove, vove nada viyti"};
+    std::vector<std::string> messages(5000, "astana-vite");
     for (const auto &message: messages) {
         talk_to_svr::start(ep, message);
     }
     boost::thread_group threads;
-    for (int i = 0; i < 4; ++i) threads.create_thread(worker_thread);
+    for (int i = 0; i < 1000; ++i) threads.create_thread(worker_thread);
     threads.join_all();
 }

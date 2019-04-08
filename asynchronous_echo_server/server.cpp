@@ -93,6 +93,6 @@ int main(int argc, char *argv[]) {
     talk_to_client::ptr client = talk_to_client::new_();
     acceptor.async_accept(client->sock(), boost::bind(handle_accept, client, _1));
     boost::thread_group threads;
-    for (int i = 0; i < 4; ++i) threads.create_thread(worker_thread);
+    for (int i = 0; i < 10; ++i) threads.create_thread(worker_thread);
     threads.join_all();
 }
