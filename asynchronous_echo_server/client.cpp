@@ -8,15 +8,15 @@
 #include <boost/thread.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/bind.hpp>
+#include <mutex>
 
-#define MEM_FN(x) boost::bind(&self_type::x, shared_from_this())
 #define MEM_FN1(x, y) boost::bind(&self_type::x, shared_from_this(), y)
 #define MEM_FN2(x, y, z) boost::bind(&self_type::x, shared_from_this(), y, z)
 
 using namespace boost::asio;
 
 static io_service service;
-
+static std::mutex io;
 class talk_to_svr : public boost::enable_shared_from_this<talk_to_svr>, boost::noncopyable {
     typedef talk_to_svr self_type;
 
@@ -66,6 +66,7 @@ public:
     void on_read(const error_code &err, size_t bytes) {
         if (!err) {
             std::string copy(read_buffer_, bytes - 1);
+            std::lock_guard<std::mutex> lock(io);
             std::cout << "Server echoed our " << message_ << ": " << (copy == message_ ? "OK" : "FAIL") << std::endl;
         }
         stop();
