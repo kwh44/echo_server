@@ -20,15 +20,15 @@ static std::mutex io;
 class talk_to_svr : public boost::enable_shared_from_this<talk_to_svr>, boost::noncopyable {
     typedef talk_to_svr self_type;
 
-    talk_to_svr(const std::string &message) : sock_(service), started_(true), message_(message) {}
+    explicit talk_to_svr(const std::string &message) : sock_(service), started_(true), message_(message) {}
 
-    void start(ip::tcp::endpoint ep) { sock_.async_connect(ep, MEM_FN1(on_connect, _1)); }
+    void start(ip::tcp::endpoint & ep) { sock_.async_connect(ep, MEM_FN1(on_connect, _1)); }
 
 public:
     typedef boost::system::error_code error_code;
     typedef boost::shared_ptr<talk_to_svr> ptr;
 
-    static ptr start(ip::tcp::endpoint ep, const std::string &message) {
+    static ptr start(ip::tcp::endpoint &ep, const std::string &message) {
         ptr new_(new talk_to_svr(message));
         new_->start(ep);
         return new_;
@@ -91,7 +91,7 @@ void worker_thread() {
 };
 
 int main(int argc, char *argv[]) {
-    int n = 2000;
+    int n = 10;
     ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 8001);
     std::vector<std::string> messages(n, "astana-vite");
     for (const auto &message: messages) {
