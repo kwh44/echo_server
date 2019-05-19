@@ -2,10 +2,18 @@ cmake_minimum_required(VERSION 3.0)
 
 project(echo_server)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 find_package(Boost COMPONENTS system thread REQUIRED)
 
-add_subdirectory(synchronous_echo_server sync_echo_server)
+add_executable(sserver sserver.cpp)
 
-add_subdirectory(asynchronous_echo_server async_echo_server)
+add_executable(aserver aserver.cpp)
+
+add_executable(client client.cpp)
+
+target_link_libraries(sserver Boost::system Boost::thread)
+
+target_link_libraries(aserver Boost::system Boost::thread)
+
+target_link_libraries(client Boost::system Boost::thread)

@@ -14,7 +14,7 @@
 #define MEM_FN2(x, y, z) boost::bind(&self_type::x, shared_from_this(), y, z)
 
 using namespace boost::asio;
-
+long num = 0;
 static io_service service;
 static std::mutex io;
 class talk_to_svr : public boost::enable_shared_from_this<talk_to_svr>, boost::noncopyable {
@@ -67,6 +67,8 @@ public:
         if (!err) {
             std::string copy(read_buffer_, bytes - 1);
             std::lock_guard<std::mutex> lock(io);
+            ++num;
+            std::cout << "Server replied : " << copy << std::endl;
             std::cout << "Server echoed our " << message_ << ": " << (copy == message_ ? "OK" : "FAIL") << std::endl;
         }
         stop();
@@ -89,12 +91,15 @@ void worker_thread() {
 };
 
 int main(int argc, char *argv[]) {
+    int n = 2000;
     ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 8001);
-    std::vector<std::string> messages(5000, "astana-vite");
+    std::vector<std::string> messages(n, "astana-vite");
     for (const auto &message: messages) {
         talk_to_svr::start(ep, message);
     }
     boost::thread_group threads;
-    for (int i = 0; i < 1000; ++i) threads.create_thread(worker_thread);
+    for (int i = 0; i < n; ++i) threads.create_thread(worker_thread);
     threads.join_all();
+    std::cout << "Served requests " << num << std::endl;
+    return 0;
 }

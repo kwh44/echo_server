@@ -1,23 +1,23 @@
-//
-// Created by kwh44 on 4/7/19.
-//
-
 #include <iostream>
 #include <mutex>
+#include <streambuf>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <boost/asio/error.hpp>
 
-#define MEM_FN1(x, y) boost::bind(&self_type::x, shared_from_this(), y)
-#define MEM_FN2(x, y, z) boost::bind(&self_type::x, shared_from_this(), y, z)
 
 using namespace boost::asio;
-static io_service service;
+io_service service;
 
 class talk_to_client : public boost::enable_shared_from_this<talk_to_client>, boost::noncopyable {
+    ip::tcp::socket sock_;
+    streambuf read_buffer_;
+    streambuf write_buffer_;
+    bool started_;
+
     typedef talk_to_client self_type;
 
-    talk_to_client() : sock_(service), started_(false) {}
+    explicit talk_to_client() : sock_(service), started_(false) {}
 
 public:
     typedef boost::system::error_code error_code;
@@ -40,24 +40,38 @@ public:
     }
 
     size_t read_complete(const boost::system::error_code &err, size_t bytes) {
-        if (err) return 0;
-        bool found = std::find(read_buffer_, read_buffer_ + bytes, '\n') < read_buffer_ + bytes;
-        return found ? 0 : 1;
+        const char *begin = buffer_cast<const char *>(read_buffer_.data());
+        if (bytes == 0) return 1;
+        while (bytes > 0) {
+            char c = *begin;
+            if (c == '3') {
+                return 0;
+            } else {
+                --bytes;
+            }
+            ++begin;
+        }
+        return 1;
     }
 
     void do_read() {
-        async_read(sock_, buffer(read_buffer_), MEM_FN2(read_complete, _1, _2), MEM_FN2(on_read, _1, _2));
+        async_read(sock_, read_buffer_, boost::bind(&self_type::read_complete, shared_from_this(), _1, _2),
+                   boost::bind(&self_type::on_read, shared_from_this(), _1, _2));
     }
 
     void do_write(const std::string &msg) {
         if (!started_) return;
-        std::copy(msg.begin(), msg.end(), write_buffer_);
-        sock_.async_write_some(buffer(write_buffer_, msg.size()), MEM_FN2(on_write, _1, _2));
+        std::ostream out(&write_buffer_);
+        out << msg;
+        async_write(sock_, write_buffer_,
+                    boost::bind(&self_type::on_write, shared_from_this(), _1, _2));
     }
 
     void on_read(const error_code &err, size_t bytes) {
         if (!err) {
-            std::string msg(read_buffer_, bytes);
+            std::ostringstream out;
+            out << &read_buffer_;
+            std::string msg(out.str());
             do_write(msg + "\n");
         }
         stop();
@@ -66,18 +80,9 @@ public:
     void on_write(const error_code &err, size_t bytes) { do_read(); }
 
     ip::tcp::socket &sock() { return sock_; }
-
-private:
-    ip::tcp::socket sock_;
-    enum {
-        max_msg = 1024
-    };
-    char read_buffer_[max_msg];
-    char write_buffer_[max_msg];
-    bool started_;
 };
 
-static ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), 8001));
+ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), 8001));
 
 void handle_accept(talk_to_client::ptr client, const boost::system::error_code &err) {
     client->start();
@@ -85,14 +90,8 @@ void handle_accept(talk_to_client::ptr client, const boost::system::error_code &
     acceptor.async_accept(new_client->sock(), boost::bind(handle_accept, new_client, _1));
 }
 
-void worker_thread() {
-    service.run();
-}
-
 int main(int argc, char *argv[]) {
     talk_to_client::ptr client = talk_to_client::new_();
     acceptor.async_accept(client->sock(), boost::bind(handle_accept, client, _1));
-    boost::thread_group threads;
-    for (int i = 0; i < 10; ++i) threads.create_thread(worker_thread);
-    threads.join_all();
+    service.run();
 }

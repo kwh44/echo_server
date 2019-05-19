@@ -1,0 +1,5 @@
+/Users/kolakolasic/Documents/Projects/echo_server/build/CMakeFiles/rebuild_cache.dir
+/Users/kolakolasic/Documents/Projects/echo_server/build/CMakeFiles/edit_cache.dir
+/Users/kolakolasic/Documents/Projects/echo_server/build/CMakeFiles/aserver.dir
+/Users/kolakolasic/Documents/Projects/echo_server/build/CMakeFiles/client.dir
+/Users/kolakolasic/Documents/Projects/echo_server/build/CMakeFiles/sserver.dir
