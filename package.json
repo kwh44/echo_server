@@ -4,11 +4,13 @@
   "description": "echo server project",
   "main": "node_server.js",
   "dependencies": {
+    "@hapi/hapi": "^18.3.1",
     "napi-js": "^3.0.5"
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node node_server.js"
   },
   "repository": {
     "type": "git",
