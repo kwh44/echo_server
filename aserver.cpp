@@ -1,35 +1,34 @@
 #include <iostream>
 #include <mutex>
+#include <atomic>
 #include <streambuf>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <boost/asio/error.hpp>
 
-
 using namespace boost::asio;
-io_service service;
 
-class talk_to_client : public boost::enable_shared_from_this<talk_to_client>, boost::noncopyable {
+class server : public boost::enable_shared_from_this<server>, boost::noncopyable {
     ip::tcp::socket sock_;
     streambuf read_buffer_;
     streambuf write_buffer_;
     bool started_;
+    const char message_end_sign = '3';
+    typedef server self_type;
 
-    typedef talk_to_client self_type;
-
-    explicit talk_to_client() : sock_(service), started_(false) {}
+    explicit server(io_service &service) : sock_(service), started_(false) {}
 
 public:
     typedef boost::system::error_code error_code;
-    typedef boost::shared_ptr<talk_to_client> ptr;
+    typedef boost::shared_ptr<self_type> ptr;
 
     void start() {
         started_ = true;
         do_read();
     }
 
-    static ptr new_() {
-        ptr new_ptr(new talk_to_client);
+    static ptr new_(io_service &service) {
+        ptr new_ptr(new server(service));
         return new_ptr;
     }
 
@@ -37,21 +36,15 @@ public:
         if (!started_) return;
         started_ = false;
         sock_.close();
+
     }
 
     size_t read_complete(const boost::system::error_code &err, size_t bytes) {
         const char *begin = buffer_cast<const char *>(read_buffer_.data());
         if (bytes == 0) return 1;
-        while (bytes > 0) {
-            char c = *begin;
-            if (c == '3') {
-                return 0;
-            } else {
-                --bytes;
-            }
-            ++begin;
-        }
-        return 1;
+
+        bool found = std::find(begin, begin + bytes, message_end_sign) < begin + bytes;
+        return found ? 0 : 1;
     }
 
     void do_read() {
@@ -68,30 +61,46 @@ public:
     }
 
     void on_read(const error_code &err, size_t bytes) {
-        if (!err) {
-            std::ostringstream out;
-            out << &read_buffer_;
-            std::string msg(out.str());
-            do_write(msg + "\n");
-        }
-        stop();
+        std::ostringstream out;
+        out << &read_buffer_;
+        std::string msg(out.str());
+        do_write(msg);
     }
 
-    void on_write(const error_code &err, size_t bytes) { do_read(); }
+    void on_write(const error_code &err, size_t bytes) { stop(); }
 
     ip::tcp::socket &sock() { return sock_; }
 };
 
-ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), 8001));
-
-void handle_accept(talk_to_client::ptr client, const boost::system::error_code &err) {
+void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr client,
+                const boost::system::error_code &err) {
     client->start();
-    talk_to_client::ptr new_client = talk_to_client::new_();
-    acceptor.async_accept(new_client->sock(), boost::bind(handle_accept, new_client, _1));
+    server::ptr new_client = server::new_(service);
+    acceptor.async_accept(new_client->sock(),
+                          boost::bind(on_connect, std::ref(acceptor), std::ref(service), new_client, _1));
+}
+
+void handle_connection(io_service &service, ip::tcp::acceptor &acceptor) {
+    server::ptr client = server::new_(service);
+    acceptor.async_accept(client->sock(), boost::bind(on_connect, std::ref(acceptor), std::ref(service), client, _1));
+}
+
+void run_service(io_service &service) {
+    service.run();
 }
 
 int main(int argc, char *argv[]) {
-    talk_to_client::ptr client = talk_to_client::new_();
-    acceptor.async_accept(client->sock(), boost::bind(handle_accept, client, _1));
-    service.run();
+    io_service service;
+    constexpr int port_number = 8001;
+    ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), port_number));
+    // create ten instances of server ready to accept message
+    for (int i = 0; i < 10; ++i) handle_connection(service, acceptor);
+    boost::thread_group thread_pool;
+    // create ten working threads that will do the work assigned to them by the io_service instance captured
+    for (int i = 0; i < 10; ++i) {
+        thread_pool.create_thread([&service]() { run_service(service); });
+    }
+    std::cout << "Server is running.\nYou can echo you message to http://localhost:" << port_number << "/\n";
+    thread_pool.join_all();
+    return 0;
 }
