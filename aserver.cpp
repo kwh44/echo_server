@@ -13,14 +13,14 @@ class server : public boost::enable_shared_from_this<server>, boost::noncopyable
     streambuf read_buffer_;
     streambuf write_buffer_;
     bool started_;
-
+    const char message_end_sign = '3';
     typedef server self_type;
 
     explicit server(io_service &service) : sock_(service), started_(false) {}
 
 public:
     typedef boost::system::error_code error_code;
-    typedef boost::shared_ptr<server> ptr;
+    typedef boost::shared_ptr<self_type> ptr;
 
     void start() {
         started_ = true;
@@ -42,7 +42,8 @@ public:
     size_t read_complete(const boost::system::error_code &err, size_t bytes) {
         const char *begin = buffer_cast<const char *>(read_buffer_.data());
         if (bytes == 0) return 1;
-        bool found = std::find(begin, begin + bytes, '3') < begin + bytes;
+
+        bool found = std::find(begin, begin + bytes, message_end_sign) < begin + bytes;
         return found ? 0 : 1;
     }
 
@@ -89,20 +90,17 @@ void run_service(io_service &service) {
 }
 
 int main(int argc, char *argv[]) {
-
     io_service service;
-
-    std::vector<ip::tcp::acceptor> acceptor_array;
-
-    ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), 8001));
-
-
+    constexpr int port_number = 8001;
+    ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), port_number));
+    // create ten instances of server ready to accept message
     for (int i = 0; i < 10; ++i) handle_connection(service, acceptor);
-
     boost::thread_group thread_pool;
+    // create ten working threads that will do the work assigned to them by the io_service instance captured
     for (int i = 0; i < 10; ++i) {
         thread_pool.create_thread([&service]() { run_service(service); });
     }
+    std::cout << "Server is running.\nYou can echo you message to http://localhost:" << port_number << "/\n";
     thread_pool.join_all();
     return 0;
 }

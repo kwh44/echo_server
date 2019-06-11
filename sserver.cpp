@@ -1,7 +1,3 @@
-//
-// Created by kwh44 on 4/7/19.
-//
-
 #include <mutex>
 #include <iostream>
 #include <boost/asio.hpp>
