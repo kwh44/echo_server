@@ -4,8 +4,7 @@
   "description": "echo server project",
   "main": "node_server.js",
   "dependencies": {
-    "@hapi/hapi": "^18.3.1",
-    "napi-js": "^3.0.5"
+    "@hapi/hapi": "^18.3.1"
   },
   "devDependencies": {},
   "scripts": {
