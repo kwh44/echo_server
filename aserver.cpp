@@ -11,19 +11,16 @@ using namespace boost::asio;
 class server : public boost::enable_shared_from_this<server>, boost::noncopyable {
     ip::tcp::socket sock_;
     streambuf read_buffer_;
-    streambuf write_buffer_;
-    bool started_;
     const char message_end_sign = '3';
     typedef server self_type;
 
-    explicit server(io_service &service) : sock_(service), started_(false) {}
+    explicit server(io_service &service) : sock_(service) {}
 
 public:
     typedef boost::system::error_code error_code;
     typedef boost::shared_ptr<self_type> ptr;
 
     void start() {
-        started_ = true;
         do_read();
     }
 
@@ -33,16 +30,12 @@ public:
     }
 
     void stop() {
-        if (!started_) return;
-        started_ = false;
         sock_.close();
-
     }
 
     size_t read_complete(const boost::system::error_code &err, size_t bytes) {
         const char *begin = buffer_cast<const char *>(read_buffer_.data());
         if (bytes == 0) return 1;
-
         bool found = std::find(begin, begin + bytes, message_end_sign) < begin + bytes;
         return found ? 0 : 1;
     }
@@ -52,19 +45,13 @@ public:
                    boost::bind(&self_type::on_read, shared_from_this(), _1, _2));
     }
 
-    void do_write(const std::string &msg) {
-        if (!started_) return;
-        std::ostream out(&write_buffer_);
-        out << msg;
-        async_write(sock_, write_buffer_,
+    void do_write() {
+        async_write(sock_, read_buffer_,
                     boost::bind(&self_type::on_write, shared_from_this(), _1, _2));
     }
 
     void on_read(const error_code &err, size_t bytes) {
-        std::ostringstream out;
-        out << &read_buffer_;
-        std::string msg(out.str());
-        do_write(msg);
+        do_write();
     }
 
     void on_write(const error_code &err, size_t bytes) { stop(); }

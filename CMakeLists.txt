@@ -13,4 +13,3 @@ add_executable(aserver aserver.cpp)
 target_link_libraries(sserver Boost::system Boost::thread)
 
 target_link_libraries(aserver Boost::system Boost::thread)
-
