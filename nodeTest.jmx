@@ -26,10 +26,9 @@
       </ThreadGroup>
       <hashTree>
         <TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="TCP Sampler" enabled="true">
-          <stringProp name="TCPSampler.server">localhost</stringProp>
+          <stringProp name="TCPSampler.server">157.230.120.50</stringProp>
           <boolProp name="TCPSampler.reUseConnection">true</boolProp>
           <stringProp name="TCPSampler.port">8001</stringProp>
-          <boolProp name="TCPSampler.nodelay">false</boolProp>
           <stringProp name="TCPSampler.timeout"></stringProp>
           <stringProp name="TCPSampler.request">test3</stringProp>
           <stringProp name="ConfigTestElement.username"></stringProp>
