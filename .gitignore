@@ -1,5 +1,3 @@
 build
 .idea
-kwh44_*
 cmake-build-debug/
-node_modules
