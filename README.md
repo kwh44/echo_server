@@ -1,6 +1,6 @@
 # Echo Server
 
-<h4>Synchronous echo server:</h4>
+<h4>Asynchronous echo server:</h4>
 <p>Echo server, implemented using boost.asio library, that processes incoming client requests in parallel.</p> 
 <h5>Requirements:</h5>
 <ul>
