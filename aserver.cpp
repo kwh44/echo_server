@@ -11,7 +11,7 @@ using namespace boost::asio;
 class server : public boost::enable_shared_from_this<server>, boost::noncopyable {
     ip::tcp::socket sock_;
     streambuf read_buffer_;
-    const char message_end_sign = '3';
+    const char message_end_sign = '3'; // because we live in 3d space ;=)
     typedef server self_type;
 
     explicit server(io_service &service) : sock_(service) {}
