@@ -20,17 +20,10 @@ public:
     typedef boost::system::error_code error_code;
     typedef boost::shared_ptr<self_type> ptr;
 
-    void start() {
-        do_read();
-    }
 
     static ptr new_(io_service &service) {
         ptr new_ptr(new server(service));
         return new_ptr;
-    }
-
-    void stop() {
-        sock_.close();
     }
 
     size_t read_complete(const boost::system::error_code &err, size_t bytes) {
@@ -50,16 +43,14 @@ public:
                     boost::bind(&self_type::on_write, shared_from_this(), _1, _2));
     }
 
-    void on_read(const error_code &err, size_t bytes) {
-        do_write();
-    }
+    void on_read(const error_code &err, size_t bytes) { do_write(); }
 
-    void on_write(const error_code &err, size_t bytes) { stop(); }
+    void on_write(const error_code &err, size_t bytes) { sock_.close(); }
 
 
     static void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr client,
                            const boost::system::error_code &err) {
-        client->start();
+        client->do_read();
         server::ptr new_client = server::new_(service);
         acceptor.async_accept(new_client->sock(),
                               boost::bind(server::on_connect, std::ref(acceptor), std::ref(service), new_client, _1));
@@ -80,9 +71,7 @@ int main(int argc, char *argv[]) {
     }
     boost::thread_group thread_pool;
     // create ten working threads that will do the work assigned to them by the io_service instance captured
-    for (int i = 0; i < 10; ++i) {
-        thread_pool.create_thread([&service]() { service.run(); });
-    }
+    for (int i = 0; i < 10; ++i) thread_pool.create_thread([&service]() { service.run(); });
     std::cout << "Server is running.\nYou can echo you message to http://localhost:" << port_number << "/\n";
     thread_pool.join_all();
     return 0;
