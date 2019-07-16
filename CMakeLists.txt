@@ -4,6 +4,8 @@ project(echo_server)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_BUILD_TYPE Release)
+
 find_package(Boost COMPONENTS system thread REQUIRED)
 
 add_executable(aserver aserver.cpp)
