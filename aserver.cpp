@@ -56,28 +56,28 @@ public:
 
     void on_write(const error_code &err, size_t bytes) { stop(); }
 
+
+    static void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr client,
+                           const boost::system::error_code &err) {
+        client->start();
+        server::ptr new_client = server::new_(service);
+        acceptor.async_accept(new_client->sock(),
+                              boost::bind(server::on_connect, std::ref(acceptor), std::ref(service), new_client, _1));
+    }
+
     ip::tcp::socket &sock() { return sock_; }
 };
-
-void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr client,
-                const boost::system::error_code &err) {
-    client->start();
-    server::ptr new_client = server::new_(service);
-    acceptor.async_accept(new_client->sock(),
-                          boost::bind(on_connect, std::ref(acceptor), std::ref(service), new_client, _1));
-}
-
-void handle_connection(io_service &service, ip::tcp::acceptor &acceptor) {
-    server::ptr client = server::new_(service);
-    acceptor.async_accept(client->sock(), boost::bind(on_connect, std::ref(acceptor), std::ref(service), client, _1));
-}
 
 int main(int argc, char *argv[]) {
     io_service service;
     constexpr int port_number = 8001;
     ip::tcp::acceptor acceptor(service, ip::tcp::endpoint(ip::tcp::v4(), port_number));
     // create ten instances of server ready to accept message
-    for (int i = 0; i < 10; ++i) handle_connection(service, acceptor);
+    for (int i = 0; i < 10; ++i) {
+        server::ptr client = server::new_(service);
+        acceptor.async_accept(client->sock(), boost::bind(server::on_connect, std::ref(acceptor), std::ref(service),
+                                                          server::new_(service), _1));
+    }
     boost::thread_group thread_pool;
     // create ten working threads that will do the work assigned to them by the io_service instance captured
     for (int i = 0; i < 10; ++i) {
