@@ -72,10 +72,6 @@ void handle_connection(io_service &service, ip::tcp::acceptor &acceptor) {
     acceptor.async_accept(client->sock(), boost::bind(on_connect, std::ref(acceptor), std::ref(service), client, _1));
 }
 
-void run_service(io_service &service) {
-    service.run();
-}
-
 int main(int argc, char *argv[]) {
     io_service service;
     constexpr int port_number = 8001;
@@ -85,7 +81,7 @@ int main(int argc, char *argv[]) {
     boost::thread_group thread_pool;
     // create ten working threads that will do the work assigned to them by the io_service instance captured
     for (int i = 0; i < 10; ++i) {
-        thread_pool.create_thread([&service]() { run_service(service); });
+        thread_pool.create_thread([&service]() { service.run(); });
     }
     std::cout << "Server is running.\nYou can echo you message to http://localhost:" << port_number << "/\n";
     thread_pool.join_all();
