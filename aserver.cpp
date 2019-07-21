@@ -38,17 +38,15 @@ public:
                    boost::bind(&self_type::on_read, shared_from_this(), _1, _2));
     }
 
-    void do_write() {
+    void on_read(const error_code &err, size_t bytes) {
         async_write(sock_, read_buffer_,
                     boost::bind(&self_type::on_write, shared_from_this(), _1, _2));
     }
 
-    void on_read(const error_code &err, size_t bytes) { do_write(); }
-
     void on_write(const error_code &err, size_t bytes) { sock_.close(); }
 
 
-    static void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr client,
+    static void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr &client,
                            const boost::system::error_code &err) {
         client->do_read();
         server::ptr new_client = server::new_(service);
