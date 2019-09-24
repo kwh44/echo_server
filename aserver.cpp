@@ -46,7 +46,7 @@ public:
     void on_write(const error_code &err, size_t bytes) { sock_.close(); }
 
 
-    static void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr &client,
+    static void on_connect(ip::tcp::acceptor &acceptor, io_service &service, server::ptr client,
                            const boost::system::error_code &err) {
         client->do_read();
         server::ptr new_client = server::new_(service);
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < 10; ++i) {
         server::ptr client = server::new_(service);
         acceptor.async_accept(client->sock(), boost::bind(server::on_connect, std::ref(acceptor), std::ref(service),
-                                                          server::new_(service), _1));
+                                                          client, _1));
     }
     boost::thread_group thread_pool;
     // create ten working threads that will do the work assigned to them by the io_service instance captured
